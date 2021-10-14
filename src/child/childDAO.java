@@ -1,4 +1,4 @@
-package board;
+package child;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -6,11 +6,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 
-public class boardDAO { //µ¥ÀÌÅÍº£ÀÌ½º¿¡ Á¢±ÙÇÏ¿©¼­ µ¥ÀÌÅÍ¸¦ °¡Á®¿À´Â ¿ªÇÒÀ» ÇÑ´Ù.!!!
+import board.board;
+
+public class childDAO {
 	private Connection conn;
 	private ResultSet rs;
 	
-	public boardDAO() {
+	public childDAO() {
 		try {
 			String dbURL = "jdbc:mysql://101.101.209.108:3306/capstone";
 			String dbID = "root";
@@ -46,14 +48,14 @@ public class boardDAO { //µ¥ÀÌÅÍº£ÀÌ½º¿¡ Á¢±ÙÇÏ¿©¼­ µ¥ÀÌÅÍ¸¦ °¡Á®¿À´Â ¿ªÇÒÀ» ÇÑ´
 	
 	public int getNext() {
 		//NOW ÇÔ¼ö´Â ÇöÀç MySQL ¼­¹öÀÇ ½Ã°£ °ªÀ» °¡Á®¿À´Â ÇÔ¼ö
-		String sql="SELECT boardId from board ORDER BY boardId DESC";  //³»¸²Â÷¼øÀ¸·Î  Áï Å« °Í >>> ÀÛÀº °Í
+		String sql="SELECT childId from childBoard ORDER BY childId DESC";  //³»¸²Â÷¼øÀ¸·Î  Áï Å« °Í >>> ÀÛÀº °Í
 		
 		try {
 			PreparedStatement pstmt = conn.prepareStatement(sql);
 			rs = pstmt.executeQuery();
 			if(rs.next()) {
 				return rs.getInt(1)+1; 
-				//boardId int >> °è½Ã±ÛÀÇ ¹øÈ£¸¦ ºÎ¿©ÇÔ 
+				//childId int >> °è½Ã±ÛÀÇ ¹øÈ£¸¦ ºÎ¿©ÇÔ 
 				// Áï ´ÙÀ½ °è½Ã¹°ÀÇ ¹øÈ£¸¦ ¹ÝÈ¯ÇÏ±â À§ÇØ¼­ ÀÌ·¸°Ô ÇÔ!! ¿¹¸¦ µé¾î¼­ 1¹ø ´ÙÀ½¿¡ 2¹ø
 			}
 			return 1; //ÇöÀç ÇÏ³ªµµ °Ô½Ã¹°ÀÌ ¾øÀ» ¶§
@@ -64,19 +66,19 @@ public class boardDAO { //µ¥ÀÌÅÍº£ÀÌ½º¿¡ Á¢±ÙÇÏ¿©¼­ µ¥ÀÌÅÍ¸¦ °¡Á®¿À´Â ¿ªÇÒÀ» ÇÑ´
 		return -1; //µ¥ÀÌÅÍº£ÀÌ½º ¿À·ù
 	}
 	
-	public int write(String boardTitle,String boardContent) { 
-		String sql="insert into board VALUES(?,?,?,?,?,?)";  //°Ô½Ã¹° ÀÛ¼ºÇÏ±â
+	public int write(String childContent,int parentId) { 
+		String sql="insert into childBoard VALUES(?,?,?,?,?,?)";  //´ñ±Û ÀÛ¼ºÇÏ±â
 		int nextNickname = getNext();
-		String boardNickname = "nickName"+nextNickname;
+		String childNickname = "nickName"+nextNickname;
 		
 		try {
 			PreparedStatement pstmt = conn.prepareStatement(sql);
-			pstmt.setInt(1, getNext()); //boardId
-			pstmt.setString(2, boardTitle); // boardTitle
-			pstmt.setString(3, boardNickname); //boardNickname
-			pstmt.setString(4, getDate()); // boardDate
-			pstmt.setString(5, boardContent); // boardContent
-			pstmt.setInt(6, 1); //»èÁ¦°¡ µÇÁö ¾Ê¾Æ¼­ ===> boardAvailable
+			pstmt.setInt(1, getNext()); //childId
+			pstmt.setString(2, childNickname); //childNickname
+			pstmt.setString(3, getDate()); // childDate
+			pstmt.setString(4, childContent); // childContent
+			pstmt.setInt(5, 1); //»èÁ¦°¡ µÇÁö ¾Ê¾Æ¼­ ===> childAvailable
+			pstmt.setInt(6, parentId);
 			
 			return pstmt.executeUpdate();
 		}
@@ -86,21 +88,23 @@ public class boardDAO { //µ¥ÀÌÅÍº£ÀÌ½º¿¡ Á¢±ÙÇÏ¿©¼­ µ¥ÀÌÅÍ¸¦ °¡Á®¿À´Â ¿ªÇÒÀ» ÇÑ´
 		return -1; //µ¥ÀÌÅÍº£ÀÌ½º ¿À·ù
 	}
 	
-	public ArrayList<board> getAllList(){ //¸ðµç °Ô½Ã¹°À» ¹ÝÈ¯ÇÑ´Ù.
-		String sql="select * from board where boardAvailable = 1 order by boardId desc";  
-		ArrayList<board> list = new ArrayList<board>();
+	public ArrayList<child> getAllList(int parentId){ //¸ðµç °Ô½Ã¹°À» ¹ÝÈ¯ÇÑ´Ù.
+		String sql="select * from childBoard where childAvailable = 1 and parentId = ? order by childId desc";  
+		ArrayList<child> list = new ArrayList<child>();
 		try {
 			PreparedStatement pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, parentId);//ÀÎÀÚ·Î Àü´Þ¹ÞÀº parentIdÀÇ °ª¿¡ ÇØ´çÇÏ´Â °Ô½Ã¹°À» ¼±ÅÃÇÑ´Ù!!! ==> Áï ÇØ´ç °Ô½Ã¹°¿¡ ÇØ´çµÇ´Â ´ñ±Ûµé¸¸ ¼±ÅÃµÈ´Ù!!
 			rs = pstmt.executeQuery();
 			while(rs.next()) {
-				board bbs = new board(); //1°³ÀÇ °Ô½Ã¹°µéÀ» ¸ðµÎ »õ·Î¿î board°´Ã¼¿¡´Ù°¡ ÀúÀåÀ» 
-				bbs.setBoardId(rs.getInt(1));
-				bbs.setBoardTitle(rs.getString(2));
-				bbs.setBoardNickname(rs.getString(3));
-				bbs.setBoardDate(rs.getString(4));
-				bbs.setBoardContent(rs.getString(5));
-				bbs.setBoardAvailable(rs.getInt(6));
-				list.add(bbs);
+				child child = new child(); //1°³ÀÇ °Ô½Ã¹°µéÀ» ¸ðµÎ »õ·Î¿î child °´Ã¼¿¡´Ù°¡ ÀúÀåÀ» ÇÑ´Ù. 
+				child.setChildId(rs.getInt(1));
+				child.setChildNickname(rs.getString(2));
+				child.setChildDate(rs.getString(3));
+				child.setChildContent(rs.getString(4));
+				child.setChildAvailable(rs.getInt(5));
+				child.setParentId(rs.getInt(6));
+				
+				list.add(child);
 			}
 		}
 		catch(Exception e) {
@@ -110,7 +114,7 @@ public class boardDAO { //µ¥ÀÌÅÍº£ÀÌ½º¿¡ Á¢±ÙÇÏ¿©¼­ µ¥ÀÌÅÍ¸¦ °¡Á®¿À´Â ¿ªÇÒÀ» ÇÑ´
 	}
 	
 	
-	public board getBoard(int boardId) { // bbsID¿¡ ÇØ´çÇÏ´Â °Ô½Ã¹°À» ¹ÝÈ¯ÇÑ´Ù.
+	/*public board getBoard(int boardId) { // bbsID¿¡ ÇØ´çÇÏ´Â °Ô½Ã¹°À» ¹ÝÈ¯ÇÑ´Ù.
 		String sql="select * from board where boardId = ?";
 		try {
 			PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -132,9 +136,9 @@ public class boardDAO { //µ¥ÀÌÅÍº£ÀÌ½º¿¡ Á¢±ÙÇÏ¿©¼­ µ¥ÀÌÅÍ¸¦ °¡Á®¿À´Â ¿ªÇÒÀ» ÇÑ´
 			e.printStackTrace();
 		}
 		return null;
-	}
+	}*/
 	
-	public int update(int boardId, String boardTitle, String boardContent) {
+	/*public int update(int childId, String boardTitle, String boardContent) {
 		String SQL = "UPDATE board SET boardTitle=?, boardContent=?, boardDate=? WHERE boardId = ?";
 		try {
 			PreparedStatement pstmt = conn.prepareStatement(SQL);
@@ -160,6 +164,5 @@ public class boardDAO { //µ¥ÀÌÅÍº£ÀÌ½º¿¡ Á¢±ÙÇÏ¿©¼­ µ¥ÀÌÅÍ¸¦ °¡Á®¿À´Â ¿ªÇÒÀ» ÇÑ´
 			e.printStackTrace();
 		}
 		return -1; 
-	}
-	
+	}*/
 }
